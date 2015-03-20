@@ -1,0 +1,78 @@
+#
+# Randomise treatments on a 96 well plate
+#
+rm(list = ls)
+
+# are the outer wells empty?
+emptyOuter <- F
+
+# define the plate parameters
+nRows <- 8
+nCols <- 12
+if(emptyOuter == T){nRows <- nRows-2; nCols <- nCols-2}
+nWells <- nRows * nCols
+
+# define treatments and sample sizes
+treatments <- 1:10
+sampleSizes <- rep(6, 10)
+
+# account for empty space
+emptySpace <- nWells - sum(rep(1, length(treatments)) * sampleSizes)
+if(emptySpace > 0){
+  treatments <- c(treatments, NA)
+  sampleSizes <- c(sampleSizes, emptySpace)
+}
+
+# calculate the pool
+pool <- numeric(0)
+for(i in 1:length(treatments)){
+  pool <- c(pool, rep(treatments[i], sampleSizes[i]))
+}
+
+# pick random treatments for wells
+randomPool <- sample(pool, replace = F)
+plate <- matrix(randomPool, nRows, nCols)
+
+### calculate neighbour distribution
+
+# first define the identities and neighbours 
+identities <- c(plate)
+paddedPlate <- rbind(NA, cbind(NA, plate, NA), NA)
+neigh <- rbind(N  = as.vector(paddedPlate[1:nRows, 2:(nCols + 1)]),
+               NE = as.vector(paddedPlate[1:nRows, 3:(nCols + 2)]),
+               E  = as.vector(paddedPlate[2:(nRows + 1), 3:(nCols + 2)]),
+               SE = as.vector(paddedPlate[3:(nRows + 2), 3:(nCols + 2)]),
+               S  = as.vector(paddedPlate[3:(nRows + 2), 2:(nCols + 1)]),
+               SW = as.vector(paddedPlate[3:(nRows + 2), 1:nCols]),
+               W  = as.vector(paddedPlate[2:(nRows + 1), 1:nCols]),
+               NW = as.vector(paddedPlate[1:nRows, 1:nCols]))
+
+# now count up the number of each treatment surrounding each treatment
+neighData <- matrix(NA, length(treatments), length(treatments), 
+                    dimnames = list(treatments,treatments))
+expected <- neighData
+totalNeighbours <- length(which(!is.na(neigh)))
+for(i in 1:length(treatments)){
+  these <- c(neigh[,which(identities == treatments[i])])
+  for(j in 1:length(treatments)){
+    neighData[j,i] <- length(which(these == treatments[j]))
+  }
+  expected[,i] <- totalNeighbours*(sampleSizes/nWells)*(sampleSizes[i]/nWells)
+}
+
+# perfor a chisq.test to test whether sufficiently 'random'
+these <- which(upper.tri(expected, T))
+chisq.test(neighData[these], p = expected[these], rescale.p = T)
+
+# make an image
+imagePlate <- matrix(as.numeric(identities), nRows, nCols)
+# this is a quick fix for empty outer wells
+if(emptyOuter == T){imagePlate <- rbind(NA, cbind(NA, imagePlate, NA), NA)
+                    nCols <- nCols+2; nRows <- nRows+2}
+
+# plot
+par(las = 1, xpd = NA)
+image(t(imagePlate), axes = F, col = 1:length(treatments))
+text(seq(0, 1, by = 1/(nCols-1)), 1, 1:nCols)
+text(0.01, seq(1, 0, by = -1/(nRows-1)), letters[1:nRows])
+
