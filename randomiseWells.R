@@ -5,7 +5,8 @@
 randomiseWells <- function(nRows, nCols, treatments, sampleSizes = NULL, emptyOuter = 0){
   
   # outer wells empty?
-  if(emptyOuter > 0){nRows <- nRows-2*emptyOuter; nCols <- nCols-2*emptyOuter}
+  if(emptyOuter > 0){nRows <- nRows-2*emptyOuter
+                     nCols <- nCols-2*emptyOuter}
   nWells <- nRows * nCols
   
   # no sample sizes given?
