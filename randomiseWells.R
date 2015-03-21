@@ -1,8 +1,4 @@
-#
-#       Randomise treatments on a 96 well plate
-#
-
-
+# Randomise treatments on a 96 well plate
 
 # The first function, randomiseWells() takes some information about the plate and samples 
 # and then does the randomisation. 
